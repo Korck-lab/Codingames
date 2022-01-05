@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "name": "macos-gcc-arm64",
+      "includePath": [
+        "${workspaceFolder}/**"
+      ],
+      "compilerPath": "/usr/bin/clang",
+      "cStandard": "${default}",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "macos-gcc-arm64",
+      "compilerArgs": [
+        "-std=c++17",
+        "-stdlib=libc++",
+        "-fdiagnostics-color=always",
+        "-g",
+        "${file}",
+        "-o",
+        "${fileDirname}/${fileBasenameNoExtension}"
+      ]
+    }
+  ],
+  "version": 4
+}
