@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "__debug": "cpp",
+        "chrono": "cpp",
+        "functional": "cpp",
+        "locale": "cpp",
+        "memory": "cpp",
+        "unordered_map": "cpp",
+        "algorithm": "cpp",
+        "complex": "cpp",
+        "new": "cpp",
+        "iostream": "cpp"
+    }
+}
