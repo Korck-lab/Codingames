@@ -22,6 +22,42 @@ using namespace std;
 
 static int evals = 0;
 clock_t tStart = clock();
+char pattern1[][BOARDSIZE]={
+'.i.......',
+'ha.......',
+'.b.......',
+'gc.......',
+'.d.......',
+'.e.......',
+'kf.......',
+'jl.......',
+'.m.......',
+};
+
+char pattern2[][BOARDSIZE]={
+'.fe......',
+'g.d......',
+'cba......',
+'.........',
+'.........',
+'.........',
+'.........',
+'.........',
+'.........',
+};
+
+char pattern3[][BOARDSIZE]={
+'.........',
+'.........',
+'..abd....',
+'..c......',
+'..e......',
+'.........',
+'.........',
+'.........',
+'.........',
+};
+
 
 class Play
 {
@@ -29,16 +65,21 @@ class Play
 public:
     short x;
     short y;
+    short pos;
     float score;
-    Play(short x = -1, short y = -1, float score = 0.0f)
-        : x(x), y(y), score(score){};
+    Play(short x = -1, short y = -1, float score = 0.0f, short pos = 0)
+        : x(x), y(y), score(score), pos(0){};
     bool operator<(const Play &m) const
     {
         return (score > m.score); //reverse
     }
+    Play swapCoordsCopy()
+    {
+        return(Play(y, x, score, pos));
+    }
     void dbg()
     {
-        cerr << "x[" << x << "] y[" << y << "] score[" << score << "]" << endl;
+        cerr << "x[" << x << "] y[" << y << "] score[" << score << "] pos[" << pos << "] " << endl;
     }
 };
 
@@ -50,20 +91,12 @@ float score(bool captures[BOARDSIZE][BOARDSIZE], const char board[BOARDSIZE][BOA
         for (short y = 0; y < BOARDSIZE; y++)
         {
             captures[y][x] = board[y][x] == A ? true : false;
-            //   cerr << m[y][x] << ".";
         }
-        // cerr << endl;
     }
 
     bool changed;
     do
     {
-        // double tElapsed = double(clock() - tStart) / double(CLOCKS_PER_SEC);
-        // if(TLIMIT-tElapsed<0.0)
-        // {
-        //     cerr << "safe leaving search due time! " << tElapsed << " s" << endl;
-        //     break;
-        // }
         changed = false;
         for (short c = 0; c < BOARDSIZE * BOARDSIZE; c++)
         {
@@ -72,7 +105,6 @@ float score(bool captures[BOARDSIZE][BOARDSIZE], const char board[BOARDSIZE][BOA
 
             if (!captures[y][x])
                 continue;
-            // cerr << "y:" << y << " x:" << x << " " << board[y][x] << endl;
 
             if (y > 0)
             {
@@ -129,7 +161,7 @@ Play searchMove(char oboard[BOARDSIZE][BOARDSIZE], bool ocaptures[BOARDSIZE][BOA
                 vector<pair<short, short>> freePos, char myC, char opC, bool myMove,
                 short depth, short maxDepth, short maxEval)
 {
-    maxEval = maxEval < MINEVAL ? MINEVAL : maxEval;
+    // maxEval = maxEval < MINEVAL ? MINEVAL : maxEval;
 
     //MAKE OWN COPY & APPLY CAPTURES
     // short free = 0;
@@ -246,12 +278,48 @@ Play searchMove(char oboard[BOARDSIZE][BOARDSIZE], bool ocaptures[BOARDSIZE][BOA
             possibles.front().dbg();
             cerr << "worst:";
             possibles.back().dbg();
-            return (ret.score <= LOSE ? Play() : ret);
+            return (ret.score < 0.0 ? Play() : ret);
         }
         return (ret);
     }
     //   cerr << depth << " | return PASS! " << endl;
     return (Play()); // pass
+}
+
+
+vector<vector<Play>> create_strategies(std::initializer_list<char(*)[BOARDSIZE]> patterns)
+{
+    vector<vector<Play>> res;
+    for(auto blueprint:patterns)
+    {
+        vector<Play> pattern[8];
+        for(short i = 0; i<BOARDSIZE; i++)
+        {
+            for(short j = 0; j<BOARDSIZE; j++)
+            {
+                Play where(i,j);
+                Play wherex(i, BOARDSIZE-j-1); // x mirroed
+                Play wherey(BOARDSIZE-i-1, j); // y mirroed
+                Play wherexy(BOARDSIZE-i-1, BOARDSIZE-j-1); // x & y mirroed
+                where.pos = short(blueprint[i][j])-short('a');
+                wherex.pos = where.pos;
+                wherey.pos = where.pos;
+                wherexy.pos = where.pos;
+                pattern[0].push_back(where);
+                pattern[1].push_back(where.swapCoordsCopy());
+                pattern[2].push_back(wherex);
+                pattern[3].push_back(wherex.swapCoordsCopy());
+                pattern[4].push_back(wherey);
+                pattern[5].push_back(wherey.swapCoordsCopy());
+                pattern[6].push_back(wherexy);
+                pattern[7].push_back(wherexy.swapCoordsCopy());
+            }           
+        }
+        for(short i = 0; i<8; i++)
+            res.push_back(pattern[i]);
+    }
+
+    return(res);
 }
 
 void test()
@@ -310,20 +378,31 @@ static short opponent_x; // The x coordinate of your opponent's last move (or -1
 static short opponent_y; // The y coordinate of your opponent's last move (or -1 if
                          // the opponent passed)
 
+auto patterns = {pattern1, pattern2, pattern3};
+auto strategies = create_strategies(patterns);
+vector<Play> currStrategy;
+short strategyIndex=0;
+
 int main()
 {
     // test();
 
     // return(0);
+    //randomize
+    sort(strategies.begin(), strategies.end(), [](const auto &l, const auto &r)
+    {
+        return(rand()&0x1);
+    });
+
+    currStrategy = strategies.back();
+    strategies.pop_back();
+
 
     string my_color;
     getline(cin, my_color);
     short board_size = BOARDSIZE;
     cin >> board_size; // the size of the board (width and height)
     cin.ignore();
-    //   cerr << "Aqui1" << endl;
-
-    //   cerr << "Aqui2" << endl;
 
     short wc = 0;
     short bc = 0;
@@ -376,7 +455,7 @@ int main()
                  {
                      short ld = abs(opponent_y - l.first) + abs(opponent_x - l.second);
                      short rd = abs(opponent_y - r.first) + abs(opponent_x - r.second);
-                     return (ld > rd);
+                     return (ld < rd);
                  });
         }
 
