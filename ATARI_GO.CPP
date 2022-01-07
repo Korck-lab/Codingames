@@ -3,22 +3,25 @@
 #include <string>
 #include <vector>
 #include <math.h>
+#include <time.h>
 
 using namespace std;
 
 #define W 'W'
 #define B 'B'
 #define A '.'
-#define P "PASS"
-#define MAXEVAL (short)9
-#define MINEVAL (short)6
-#define MAXDEPTH (short)4
+#define P (string) "PASS"
+#define MAXEVAL (short)20
+#define MINEVAL (short)15
+#define MAXDEPTH (short)2
 #define BOARDSIZE (short)9
 #define HBOARD (short)50
 #define CAPTURE (float)1.0f
-#define LOSE (float)-2.0f
+#define LOSE (float)-1.0f
+#define TLIMIT (double)0.095
 
 static int evals = 0;
+clock_t tStart = clock();
 
 class Play
 {
@@ -55,6 +58,12 @@ float score(bool captures[BOARDSIZE][BOARDSIZE], const char board[BOARDSIZE][BOA
     bool changed;
     do
     {
+        // double tElapsed = double(clock() - tStart) / double(CLOCKS_PER_SEC);
+        // if(TLIMIT-tElapsed<0.0)
+        // {
+        //     cerr << "safe leaving search due time! " << tElapsed << " s" << endl;
+        //     break;
+        // }
         changed = false;
         for (short c = 0; c < BOARDSIZE * BOARDSIZE; c++)
         {
@@ -72,7 +81,7 @@ float score(bool captures[BOARDSIZE][BOARDSIZE], const char board[BOARDSIZE][BOA
                     changed = captures[y - 1][x] == true ? changed : true;
                     captures[y - 1][x] = true;
                     // if(board[y][x] != A)
-                        // cerr << "changed:" << changed << " y:" << y-1 << " x:" << x << " " << board[y-1][x] << endl;
+                    // cerr << "changed:" << changed << " y:" << y-1 << " x:" << x << " " << board[y-1][x] << endl;
                 }
             }
             if (y < BOARDSIZE - 1)
@@ -107,40 +116,45 @@ float score(bool captures[BOARDSIZE][BOARDSIZE], const char board[BOARDSIZE][BOA
     {
         for (short x = 0; x < BOARDSIZE; x++)
         {
-            cerr << captures[y][x];
+            // cerr << captures[y][x];
             myCount += (captures[y][x] == false && board[y][x] != myC) ? CAPTURE : (captures[y][x] == false && board[y][x] == myC) ? LOSE
                                                                                                                                    : 0.0f;
         }
-        cerr << endl;
+        // cerr << endl;
     }
     return (myCount);
 }
 
-Play searchMove(char oboard[BOARDSIZE][BOARDSIZE], bool ocaptures[BOARDSIZE][BOARDSIZE], short wc, short bc,
-                char myC, char opC, bool myMove, short depth, short maxDepth, short maxEval)
+Play searchMove(char oboard[BOARDSIZE][BOARDSIZE], bool ocaptures[BOARDSIZE][BOARDSIZE],
+                vector<pair<short, short>> freePos, char myC, char opC, bool myMove,
+                short depth, short maxDepth, short maxEval)
 {
     maxEval = maxEval < MINEVAL ? MINEVAL : maxEval;
 
     //MAKE OWN COPY & APPLY CAPTURES
-    short free = 0;
+    // short free = 0;
     char board[BOARDSIZE][BOARDSIZE];
     for (short i = 0; i < BOARDSIZE; i++)
     {
         for (short j = 0; j < BOARDSIZE; j++)
         {
             board[i][j] = ocaptures[i][j] == false ? A : oboard[i][j];
-            if (board[i][j] == A)
-            {
-                free++;
-            }
+            //     if (board[i][j] == A)
+            //     {
+            //         free++;
+            //     }
+            // }
         }
     }
-
     //this level probability contribution
-    float prob = (float)((BOARDSIZE * BOARDSIZE) - (free - 1)) / (float)(BOARDSIZE * BOARDSIZE);
-    // cerr << depth << " | prob local:"<< prob << " |";
-    prob *= powf(prob, depth);
-    // cerr <<"| prob global:"<< prob << " | " << endl;
+    float prob = 1.0f;
+    if (depth > 1)
+    {
+        prob = (float)((BOARDSIZE * BOARDSIZE) - (freePos.size() - 1)) / (float)(BOARDSIZE * BOARDSIZE);
+        // cerr << depth << " | prob local:"<< prob << " |";
+        prob *= powf(prob, depth);
+        // cerr <<"| prob global:"<< prob << " | " << endl;
+    }
 
     vector<Play> possibles;
     bool captures[BOARDSIZE][BOARDSIZE];
@@ -148,27 +162,29 @@ Play searchMove(char oboard[BOARDSIZE][BOARDSIZE], bool ocaptures[BOARDSIZE][BOA
     char invColor = !myMove ? myC : opC;
 
     short x, y, eval = 0;
-    int localEvals = maxEval < free ? maxEval : free;
+    // int localEvals = maxEval < free ? maxEval : free;
     // cerr << depth << " | local evals:"<< localEvals << endl;
 
-    for (short i = 0; i < BOARDSIZE * BOARDSIZE; ++i)
+    for (auto pos = freePos.end() - 1; freePos.size() > 0 && pos >= freePos.begin(); pos--)
     {
-
-        if (eval >= localEvals)
+        double tElapsed = double(clock() - tStart) / double(CLOCKS_PER_SEC);
+        if (TLIMIT - tElapsed < 0.0)
         {
+            cerr << "safe leaving search due time! " << tElapsed << " s" << endl;
             break;
         }
+        // if (depth == 0)
+        // {
+        //     cerr << "Elapsed time " << tElapsed << " s" << endl;
+        // }
 
-        if (free >= HBOARD)
-        {
-            x = rand() % 9;
-            y = rand() % 9;
-        }
-        else
-        {
-            x = i % BOARDSIZE; // rand() % 9;
-            y = i / BOARDSIZE; // rand() % 9;
-        }
+        // if (eval >= localEvals)
+        // {
+        //     break;
+        // }
+
+        x = pos->second;
+        y = pos->first;
 
         char p = board[y][x];
         if (p != A)
@@ -192,326 +208,113 @@ Play searchMove(char oboard[BOARDSIZE][BOARDSIZE], bool ocaptures[BOARDSIZE][BOA
 
         board[y][x] = color; // make move
         Play m(x, y);
-        // cerr << "eval score..." << endl;
         m.score = score(captures, board, myC) * prob;
-        // cerr << " ==> score" << m.score << endl;
 
-        if (depth != maxDepth && free >= 2)
+        if (depth != maxDepth && freePos.size() >= 2)
         {
-            Play m1 = searchMove(board, captures, wc, bc, myC, opC, !myMove, depth + 1, maxDepth, (maxEval / (depth + 1)) + 1);
+            vector<pair<short, short>> freePosChild(freePos);
+            freePosChild.pop_back();
+            Play m1 = searchMove(board, captures, freePosChild, myC, opC, !myMove, depth + 1, maxDepth, (maxEval / (depth + 1)) + 1);
             m.score += m1.score;
         }
         possibles.push_back(m);
+        freePos.pop_back();
 
         // restore board for next simulation
         board[y][x] = p;
         eval++;
     }
 
-    //   cerr << depth << " | possibles size " << possibles.size() << endl;
-    if (myMove)
-    {
-        sort(possibles.begin(), possibles.end(),
-             [](const auto &l, const auto &r)
-             { return (l.score > r.score); });
-        // cerr << depth << " | my best " << " + ";
-        // possibles.front().dbg();
-    }
-    else //optimize for the other player
-    {
-        sort(possibles.begin(), possibles.end(),
-             [](const auto &l, const auto &r)
-             { return (l.score < r.score); });
-        // cerr << depth << " | opponent best " << " + ";
-        // possibles.front().dbg();
-    }
-
     if (!possibles.empty())
     {
-        short c = 0;
-        for (auto p : possibles)
+        if (myMove)
         {
-            ++c;
-            if (p.score < possibles.front().score || c == possibles.size())
-            {
-                Play ret = possibles[rand() % c];
-                // cerr << depth << " | return play "
-                //      << " + ";
-                // ret.dbg();
-                // if(depth == 0)
-                // {
-                //     //real score to next move
-                //     ret.score = score(captures, board, myC);
-
-                // }
-                return (ret);
-            }
+            sort(possibles.begin(), possibles.end(),
+                 [](const auto &l, const auto &r)
+                 { return (l.score > r.score); });
         }
+        else //optimize for the other player
+        {
+            sort(possibles.begin(), possibles.end(),
+                 [](const auto &l, const auto &r)
+                 { return (l.score < r.score); });
+        }
+        Play ret = possibles.front();
+        if (depth == 0)
+        {
+            cerr << "best:";
+            possibles.front().dbg();
+            cerr << "worst:";
+            possibles.back().dbg();
+            return (ret.score <= LOSE ? Play() : ret);
+        }
+        return (ret);
     }
     //   cerr << depth << " | return PASS! " << endl;
     return (Play()); // pass
 }
 
-void tests()
+void test()
 {
-    // char board[BOARDSIZE][BOARDSIZE];
+    char inputstr[] =
+        R"(.BBW.B.B.
+BBBBB.B.B
+WW.B.B.B.
+...BBBBBW
+BB.WB.BW.
+..B.WBBWW
+BBWW.WWWW
+BW.WWWW.B
+W.W.WWWW.)";
+
+    char myC = B;
+    char opC = myC == W ? B : W;
+
+    char board[BOARDSIZE][BOARDSIZE];
     bool captures[BOARDSIZE][BOARDSIZE];
+    short count = 0;
+    vector<pair<short, short>> freePos;
+
     for (short i = 0; i < BOARDSIZE; i++)
     {
         for (short j = 0; j < BOARDSIZE; j++)
         {
-
+            // string line;
+            board[i][j] = (char)inputstr[count++];
+            if (board[i][j] == A)
+            {
+                freePos.push_back(pair(i, j));
+            }
+            cerr << board[i][j];
             captures[i][j] = true;
+
+            // getline(cin, line); // A row of the current board where 'B' marks a black stone,
+            // 'W' marks a white stone and '.' marks an empty field
+            // vboard.push_back(line);
         }
+        count++; //skip \n
     }
 
-    //BW.......
-    //BW.......
-    //W........
-    //.........
-    //.........
-    //.........
-    //.........
-    //.........
-    //.........
-    //test one (my color = W => score 2)
-    //test two (my color = B => score -4)
-    char b1[][9] = {
-        {
-            B,
-            W,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        },
-        {
-            B,
-            W,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        },
-        {
-            W,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        },
-        {
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        },
-        {
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        },
-        {
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        },
-        {
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        },
-        {
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        },
-        {
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-            A,
-        }};
-    float r1 = score(captures, b1, W);
-    float r2 = score(captures, b1, B);
-    cerr << "test 1.1 (my color = W => score 2):" << r1 << "| test 1.2 (my color = B => score -4):" << r2 << endl;
-    if (r1 != 2.0f || r2 != -4.0f)
-    {
-        cerr << "!!!! TEST ERROR SCORE FUNCTION !!!!" << endl;
-    }
+    tStart = clock();
 
-    //.BW.B.B.B
-    //.BBWBBBBB
-    //W.WB.BWB.
-    //....WBW..
-    //..WW.W..B
-    //WWBW.BB.B
-    //....W.W.W
-    //.BW.BW...
-    //W.WWB.W.B
-    //test one (my color = W => score 2)
-    //test two (my color = B => score -4)
-    char b2[][9] = {
-        {
-            A,
-            B,
-            W,
-            A,
-            B,
-            A,
-            B,
-            A,
-            B,
-        },
-        {
-            A,
-            B,
-            B,
-            W,
-            B,
-            B,
-            B,
-            B,
-            B,
-        },
-        {
-            W,
-            A,
-            W,
-            B,
-            A,
-            B,
-            W,
-            B,
-            A,
-        },
-        {
-            A,
-            A,
-            A,
-            A,
-            W,
-            B,
-            W,
-            A,
-            A,
-        },
-        {
-            A,
-            A,
-            W,
-            W,
-            A,
-            W,
-            A,
-            A,
-            B,
-        },
-        {
-            W,
-            W,
-            B,
-            W,
-            A,
-            B,
-            B,
-            A,
-            B,
-        },
-        {
-            A,
-            A,
-            A,
-            A,
-            W,
-            A,
-            W,
-            A,
-            W,
-        },
-        {
-            A,
-            B,
-            W,
-            A,
-            B,
-            W,
-            A,
-            A,
-            A,
-        },
-        {
-            W,
-            A,
-            W,
-            W,
-            B,
-            A,
-            W,
-            A,
-            B,
-        }};
-    float r3 = score(captures, b2, W);
-    float r4 = score(captures, b2, B);
-    cerr << "test 2.1 (my color = W => score 2):" << r3 << "| test 2.2 (my color = B => score -4):" << r4 << endl;
-    if (r3 != 2.0f || r4 != -4.0f)
-    {
-        cerr << "!!!! TEST ERROR SCORE FUNCTION !!!!" << endl;
-    }
+    Play max = searchMove(board, captures, freePos, myC, opC, true, 0, MAXDEPTH, MAXEVAL);
+    cerr << "TEST: expected score:" << max.score << endl;
+    cerr << "TEST: total evaluations:" << evals << endl;
 }
 
 /**
  * Capture more stones than your opponent.
  **/
+static short opponent_x; // The x coordinate of your opponent's last move (or -1 if
+                         // the opponent passed)
+static short opponent_y; // The y coordinate of your opponent's last move (or -1 if
+                         // the opponent passed)
 
 int main()
 {
-    //must pass tests
-    tests();
+    // test();
+
+    // return(0);
 
     string my_color;
     getline(cin, my_color);
@@ -520,56 +323,72 @@ int main()
     cin.ignore();
     //   cerr << "Aqui1" << endl;
 
-    char board[BOARDSIZE][BOARDSIZE];
-    bool captures[BOARDSIZE][BOARDSIZE];
-    for (short i = 0; i < BOARDSIZE; i++)
-    {
-        for (short j = 0; j < BOARDSIZE; j++)
-        {
-
-            board[i][j] = A;
-            captures[i][j] = true;
-        }
-    }
     //   cerr << "Aqui2" << endl;
 
     short wc = 0;
     short bc = 0;
     char myC = my_color[0];
     char opC = myC == W ? B : W;
+    char board[BOARDSIZE][BOARDSIZE];
+    bool captures[BOARDSIZE][BOARDSIZE];
 
     // game loop
     while (1)
     {
+        tStart = clock();
         evals = 0;
-        short opponent_x; // The x coordinate of your opponent's last move (or -1 if
-                          // the opponent passed)
-        short opponent_y; // The y coordinate of your opponent's last move (or -1 if
-                          // the opponent passed)
 
         cin >> opponent_x >> opponent_y;
         cin.ignore();
-        if (opponent_x != -1)
-        {
-            board[opponent_y][opponent_x] = opC;
-        }
+
         short my_score;       // Your current score (the number of captured stones)
         short opponent_score; // the opponents current score (the number of captured
                               // stones)
         cin >> my_score >> opponent_score;
         cin.ignore();
-        vector<string> vboard;
+        vector<pair<short, short>> freePos;
+        // vector<string> vboard;
         for (short i = 0; i < board_size; i++)
         {
-            string line;
-            // cin.ignore();
+            for (short j = 0; j < board_size; j++)
+            {
+                // string line;
+                board[i][j] = (char)getchar();
+                if (board[i][j] == A)
+                {
+                    freePos.push_back(pair(i, j));
+                }
+                cerr << board[i][j];
+                captures[i][j] = true;
 
-            getline(cin, line); // A row of the current board where 'B' marks a black stone,
-                                // 'W' marks a white stone and '.' marks an empty field
-                                //   vboard.push_back(line);
-                                // cerr << line << endl;
+                // getline(cin, line); // A row of the current board where 'B' marks a black stone,
+                // 'W' marks a white stone and '.' marks an empty field
+                // vboard.push_back(line);
+            }
+            cin.ignore();
+            cerr << endl;
         }
-        Play max = searchMove(board, captures, wc, bc, myC, opC, true, 0, MAXDEPTH, MAXEVAL);
+        if (opponent_x != -1)
+        {
+            //sort around player last move
+            sort(freePos.begin(), freePos.end(),
+                 [](const auto &l, const auto &r)
+                 {
+                     short ld = abs(opponent_y - l.first) + abs(opponent_x - l.second);
+                     short rd = abs(opponent_y - r.first) + abs(opponent_x - r.second);
+                     return (ld > rd);
+                 });
+        }
+
+        // for (short i = 0; i < BOARDSIZE; i++)
+        // {
+        //     for (short j = 0; j < BOARDSIZE; j++)
+        //     {
+        //         board[i][j] = vboard[i][j];
+        //         captures[i][j] = true;
+        //     }
+        // }
+        Play max = searchMove(board, captures, freePos, myC, opC, true, 0, MAXDEPTH, MAXEVAL);
         cerr << "expected score:" << max.score << endl;
         cerr << "total evaluations:" << evals << endl;
 
@@ -581,6 +400,7 @@ int main()
         if (max.x == -1)
         {
             cout << P << endl;
+            cerr << P << endl;
             continue;
         }
         board[max.y][max.x] = myC;
