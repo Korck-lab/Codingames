@@ -11,6 +11,7 @@
         "new": "cpp",
         "iostream": "cpp",
         "vector": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "iterator": "cpp"
     }
 }
