@@ -47,371 +47,162 @@ public:
     }
 };
 
-vector<vector<Play>> create_strategies(std::initializer_list<char (*)[BOARDSIZE]> patterns)
-{
-    vector<vector<Play>> res;
-    for (auto blueprint : patterns)
-    {
-        vector<Play> pattern[8];
-        for (short i = 0; i < BOARDSIZE; i++)
-        {
-            for (short j = 0; j < BOARDSIZE; j++)
-            {
-                Play where(i, j);
-                Play wherex(i, BOARDSIZE - j - 1);                  // x mirroed
-                Play wherey(BOARDSIZE - i - 1, j);                  // y mirroed
-                Play wherexy(BOARDSIZE - i - 1, BOARDSIZE - j - 1); // x & y mirroed
-                where.pos = blueprint[i][j] == '.' ? 0 : (short(blueprint[i][j]) - short('a'));
-                wherex.pos = where.pos;
-                wherey.pos = where.pos;
-                wherexy.pos = where.pos;
-                pattern[0].push_back(where);
-                pattern[1].push_back(where.swapCoordsCopy());
-                pattern[2].push_back(wherex);
-                pattern[3].push_back(wherex.swapCoordsCopy());
-                pattern[4].push_back(wherey);
-                pattern[5].push_back(wherey.swapCoordsCopy());
-                pattern[6].push_back(wherexy);
-                pattern[7].push_back(wherexy.swapCoordsCopy());
-            }
-        }
-        for (short i = 0; i < 8; i++)
-            res.push_back(pattern[i]);
-    }
+// Play searchMove(char oboard[BOARDSIZE][BOARDSIZE], bool ocaptures[BOARDSIZE][BOARDSIZE],
+//                 vector<pair<short, short>> freePos, char myC, char opC, bool myMove,
+//                 short depth, short maxDepth, short maxEval)
+// {
+//     //MAKE OWN COPY & APPLY CAPTURES
+//     char board[BOARDSIZE][BOARDSIZE];
+//     for (short i = 0; i < BOARDSIZE; i++)
+//     {
+//         for (short j = 0; j < BOARDSIZE; j++)
+//         {
+//             board[i][j] = ocaptures[i][j] == false ? A : oboard[i][j];
+//         }
+//     }
+//     //this level probability contribution
+//     float prob = 1.0f;
+//     if (depth > 1)
+//     {
+//         prob = (float)((BOARDSIZE * BOARDSIZE) - (freePos.size() - 1)) / (float)(BOARDSIZE * BOARDSIZE);
+//         // cerr << depth << " | prob local:"<< prob << " |";
+//         prob *= powf(prob, (depth > 1 ? depth : 0));
+//         // cerr <<"| prob global:"<< prob << " | " << endl;
+//     }
 
-    return (res);
-}
+//     vector<Play> possibles;
+//     vector<Play> random;
 
-Play searchMove(char oboard[BOARDSIZE][BOARDSIZE], bool ocaptures[BOARDSIZE][BOARDSIZE],
-                vector<pair<short, short>> freePos, char myC, char opC, bool myMove,
-                short depth, short maxDepth, short maxEval)
-{
-    //MAKE OWN COPY & APPLY CAPTURES
-    char board[BOARDSIZE][BOARDSIZE];
-    for (short i = 0; i < BOARDSIZE; i++)
-    {
-        for (short j = 0; j < BOARDSIZE; j++)
-        {
-            board[i][j] = ocaptures[i][j] == false ? A : oboard[i][j];
-        }
-    }
-    //this level probability contribution
-    float prob = 1.0f;
-    if (depth > 1)
-    {
-        prob = (float)((BOARDSIZE * BOARDSIZE) - (freePos.size() - 1)) / (float)(BOARDSIZE * BOARDSIZE);
-        // cerr << depth << " | prob local:"<< prob << " |";
-        prob *= powf(prob, (depth > 1 ? depth : 0));
-        // cerr <<"| prob global:"<< prob << " | " << endl;
-    }
+//     bool captures[BOARDSIZE][BOARDSIZE];
+//     char color = myMove ? myC : opC;
+//     char invColor = !myMove ? myC : opC;
 
-    vector<Play> possibles;
-    vector<Play> random;
+//     short x, y;
 
-    bool captures[BOARDSIZE][BOARDSIZE];
-    char color = myMove ? myC : opC;
-    char invColor = !myMove ? myC : opC;
+//     for (auto pos = freePos.end() - 1; freePos.size() > 0 && pos >= freePos.begin(); pos--)
+//     {
+//         double tElapsed = double(clock() - tStart) / double(CLOCKS_PER_SEC);
+//         if (TLIMIT - tElapsed < 0.0)
+//         {
+//             cerr << "safe leaving search due time! " << tElapsed << " s" << endl;
+//             break;
+//         }
 
-    short x, y;
+//         x = pos->second;
+//         y = pos->first;
 
-    for (auto pos = freePos.end() - 1; freePos.size() > 0 && pos >= freePos.begin(); pos--)
-    {
-        double tElapsed = double(clock() - tStart) / double(CLOCKS_PER_SEC);
-        if (TLIMIT - tElapsed < 0.0)
-        {
-            cerr << "safe leaving search due time! " << tElapsed << " s" << endl;
-            break;
-        }
+//         char p = board[y][x];
+//         if (p != A)
+//         {
+//             // cerr << depth << " | skiping " << board[y][x] << " | "<<endl;
+//             continue; // taken
+//         }
 
-        x = pos->second;
-        y = pos->first;
+//         // check if possible to play here
 
-        char p = board[y][x];
-        if (p != A)
-        {
-            // cerr << depth << " | skiping " << board[y][x] << " | "<<endl;
-            continue; // taken
-        }
+//         if (((y > 0 && board[y - 1][x] == invColor) || y == 0) &&
+//             ((y < BOARDSIZE - 1 && board[y + 1][x] == invColor) || y == BOARDSIZE - 1) && // suicide check
+//             ((x > 0 && board[y][x - 1] == invColor) || x == 0) &&
+//             ((x < BOARDSIZE - 1 && board[y][x + 1] == invColor) || x == BOARDSIZE - 1))
+//         {
+//             //   cerr << depth << " | suicide pos "
+//             //        << " + ";
+//             //   m.dbg();
+//             continue; // didnt pass check
+//         }
 
-        // check if possible to play here
+//         board[y][x] = color; // make move
+//         Play m(x, y);
+//         m.score = score(captures, board, myC) * prob;
 
-        if (((y > 0 && board[y - 1][x] == invColor) || y == 0) &&
-            ((y < BOARDSIZE - 1 && board[y + 1][x] == invColor) || y == BOARDSIZE - 1) && // suicide check
-            ((x > 0 && board[y][x - 1] == invColor) || x == 0) &&
-            ((x < BOARDSIZE - 1 && board[y][x + 1] == invColor) || x == BOARDSIZE - 1))
-        {
-            //   cerr << depth << " | suicide pos "
-            //        << " + ";
-            //   m.dbg();
-            continue; // didnt pass check
-        }
+//         if (depth != maxDepth && freePos.size() >= 2)
+//         {
+//             vector<pair<short, short>> freePosChild(freePos);
+//             freePosChild.pop_back();
+//             Play m1 = searchMove(board, captures, freePosChild, myC, opC, !myMove, depth + 1, maxDepth, (maxEval / (depth + 1)) + 1);
+//             m.score += m1.score;
+//         }
+//         if (m.score >= CAPTURE)
+//         {
+//             if (m.score >= CAPTURE * 2)
+//             {
+//                 return (m);
+//             }
+//             possibles.push_back(m);
+//         }
+//         if (m.score > LOSE)
+//         {
+//             random.push_back(m);
+//         }
 
-        board[y][x] = color; // make move
-        Play m(x, y);
-        m.score = score(captures, board, myC) * prob;
+//         freePos.pop_back();
 
-        if (depth != maxDepth && freePos.size() >= 2)
-        {
-            vector<pair<short, short>> freePosChild(freePos);
-            freePosChild.pop_back();
-            Play m1 = searchMove(board, captures, freePosChild, myC, opC, !myMove, depth + 1, maxDepth, (maxEval / (depth + 1)) + 1);
-            m.score += m1.score;
-        }
-        if (m.score >= CAPTURE)
-        {
-            if (m.score >= CAPTURE * 2)
-            {
-                return (m);
-            }
-            possibles.push_back(m);
-        }
-        if (m.score > LOSE)
-        {
-            random.push_back(m);
-        }
+//         // restore board for next simulation
+//         board[y][x] = p;
+//     }
 
-        freePos.pop_back();
+//     if (!possibles.empty())
+//     {
+//         if (myMove)
+//         {
+//             sort(possibles.begin(), possibles.end(),
+//                  [](const auto &l, const auto &r)
+//                  { return (l.score > r.score); });
+//         }
+//         else //optimize for the other player
+//         {
+//             sort(possibles.begin(), possibles.end(),
+//                  [](const auto &l, const auto &r)
+//                  { return (l.score < r.score); });
+//         }
+//         return (possibles.front());
+//         // Play ret = possibles.front();
+//         // if (depth == 0)
+//         // {
+//         //     cerr << "best:";
+//         //     possibles.front().dbg();
+//         //     cerr << "worst:";
+//         //     possibles.back().dbg();
+//         //     return (ret.score < 0.0 ? Play() : ret);
+//         // }
+//         // return (ret);
+//     }
 
-        // restore board for next simulation
-        board[y][x] = p;
-    }
+//     if (myMove && depth == 0 && !(currStrategy.empty() && strategies.empty()))
+//     {
 
-    if (!possibles.empty())
-    {
-        if (myMove)
-        {
-            sort(possibles.begin(), possibles.end(),
-                 [](const auto &l, const auto &r)
-                 { return (l.score > r.score); });
-        }
-        else //optimize for the other player
-        {
-            sort(possibles.begin(), possibles.end(),
-                 [](const auto &l, const auto &r)
-                 { return (l.score < r.score); });
-        }
-        return (possibles.front());
-        // Play ret = possibles.front();
-        // if (depth == 0)
-        // {
-        //     cerr << "best:";
-        //     possibles.front().dbg();
-        //     cerr << "worst:";
-        //     possibles.back().dbg();
-        //     return (ret.score < 0.0 ? Play() : ret);
-        // }
-        // return (ret);
-    }
+//         for (auto p = currStrategy.end() - 1; p >= currStrategy.begin(); p--)
+//         {
+//             Play m = *p;
+//             currStrategy.erase(p);
+//             if (currStrategy.empty())
+//             {
+//                 if (strategies.empty())
+//                     break;
+//                 currStrategy = strategies.back();
+//                 strategies.pop_back();
+//             }
+//             if (board[m.y][m.x] != A)
+//             {
+//                 continue;
+//             }
+//             cerr << "strategy move:";
+//             m.dbg();
+//             return (m);
+//         }
+//     }
 
-    if (myMove && depth == 0 && !(currStrategy.empty() && strategies.empty()))
-    {
+//     if (!random.empty())
+//     {
+//         return (random[rand() % random.size()]);
+//     }
 
-        for (auto p = currStrategy.end() - 1; p >= currStrategy.begin(); p--)
-        {
-            Play m = *p;
-            currStrategy.erase(p);
-            if (currStrategy.empty())
-            {
-                if (strategies.empty())
-                    break;
-                currStrategy = strategies.back();
-                strategies.pop_back();
-            }
-            if (board[m.y][m.x] != A)
-            {
-                continue;
-            }
-            cerr << "strategy move:";
-            m.dbg();
-            return (m);
-        }
-    }
-
-    if (!random.empty())
-    {
-        return (random[rand() % random.size()]);
-    }
-
-    return (Play()); // pass
-}
-class Game;
-
-class Agent
-{
-public:
-    vector<vector<Play>> strategies;
-    vector<Play> currStrategy;
-    const char myC;
-    Game *game;
-    short captures;
-
-    Agent(Game &game, const vector<vector<Play>> strategies, const char myC) : game(&game), myC(myC), captures(0)
-    {
-        this->strategies = vector<vector<Play>>(strategies);
-        //randomize
-        sort(strategies.begin(), strategies.end(), [](const auto &l, const auto &r)
-             { return (bool(rand() & 0x1)); });
-
-        currStrategy = strategies.back();
-        this->strategies.pop_back();
-    }
-
-    Play searchMove(char lboard[BOARDSIZE][BOARDSIZE], bool lcaptures[BOARDSIZE][BOARDSIZE],
-                    vector<pair<short, short>> lfreePos, short depth)
-    {
-        bool myMove = bool(depth % 2);
-        char opC = myC == W ? B : W;
-        char board[BOARDSIZE][BOARDSIZE];
-        for (short i = 0; i < BOARDSIZE; i++)
-        {
-            for (short j = 0; j < BOARDSIZE; j++)
-            {
-                board[i][j] = lcaptures[i][j] == false ? A : lboard[i][j];
-            }
-        }
-        //this level probability contribution
-        float prob = 1.0f;
-        if (depth > 1)
-        {
-            prob = (float)((BOARDSIZE * BOARDSIZE) - (lfreePos.size() - 1)) / (float)(BOARDSIZE * BOARDSIZE);
-            // cerr << depth << " | prob local:"<< prob << " |";
-            prob *= powf(prob, (depth > 1 ? depth : 0));
-            // cerr <<"| prob global:"<< prob << " | " << endl;
-        }
-
-        vector<Play> possibles;
-        vector<Play> random;
-
-        bool captures[BOARDSIZE][BOARDSIZE];
-        char color = myMove ? myC : opC;
-        char invColor = !myMove ? myC : opC;
-
-        short x, y;
-
-        for (auto pos = lfreePos.end() - 1; lfreePos.size() > 0 && pos >= lfreePos.begin(); pos--)
-        {
-            double tElapsed = double(clock() - tStart) / double(CLOCKS_PER_SEC);
-#ifndef TEST
-            if (TLIMIT - tElapsed < 0.0)
-            {
-                cerr << "safe leaving search due time! " << tElapsed << " s" << endl;
-                break;
-            }
-#endif
-            x = pos->second;
-            y = pos->first;
-
-            char p = board[y][x];
-            if (p != A)
-            {
-                // cerr << depth << " | skiping " << board[y][x] << " | "<<endl;
-                continue; // taken
-            }
-
-            // check if possible to play here
-
-            if (((y > 0 && board[y - 1][x] == invColor) || y == 0) &&
-                ((y < BOARDSIZE - 1 && board[y + 1][x] == invColor) || y == BOARDSIZE - 1) && // suicide check
-                ((x > 0 && board[y][x - 1] == invColor) || x == 0) &&
-                ((x < BOARDSIZE - 1 && board[y][x + 1] == invColor) || x == BOARDSIZE - 1))
-            {
-                continue; // didnt pass check
-            }
-
-            board[y][x] = color; // make move
-            Play m(x, y);
-            m.score = score(captures, board, myC) * prob;
-
-            if (depth != maxDepth && freePos.size() >= 2)
-            {
-                vector<pair<short, short>> freePosChild(freePos);
-                freePosChild.pop_back();
-                Play m1 = searchMove(board, captures, freePosChild, myC, opC, !myMove, depth + 1, maxDepth, (maxEval / (depth + 1)) + 1);
-                m.score += m1.score;
-            }
-            if (m.score >= CAPTURE)
-            {
-                if (m.score >= CAPTURE * 2)
-                {
-                    return (m);
-                }
-                possibles.push_back(m);
-            }
-            if (m.score > LOSE)
-            {
-                random.push_back(m);
-            }
-
-            freePos.pop_back();
-
-            // restore board for next simulation
-            board[y][x] = p;
-        }
-
-        if (!possibles.empty())
-        {
-            if (myMove)
-            {
-                sort(possibles.begin(), possibles.end(),
-                     [](const auto &l, const auto &r)
-                     { return (l.score > r.score); });
-            }
-            else //optimize for the other player
-            {
-                sort(possibles.begin(), possibles.end(),
-                     [](const auto &l, const auto &r)
-                     { return (l.score < r.score); });
-            }
-            return (possibles.front());
-            // Play ret = possibles.front();
-            // if (depth == 0)
-            // {
-            //     cerr << "best:";
-            //     possibles.front().dbg();
-            //     cerr << "worst:";
-            //     possibles.back().dbg();
-            //     return (ret.score < 0.0 ? Play() : ret);
-            // }
-            // return (ret);
-        }
-
-        if (myMove && depth == 0 && !(currStrategy.empty() && strategies.empty()))
-        {
-
-            for (auto p = currStrategy.end() - 1; p >= currStrategy.begin(); p--)
-            {
-                Play m = *p;
-                currStrategy.erase(p);
-                if (currStrategy.empty())
-                {
-                    if (strategies.empty())
-                        break;
-                    currStrategy = strategies.back();
-                    strategies.pop_back();
-                }
-                if (board[m.y][m.x] != A)
-                {
-                    continue;
-                }
-                cerr << "strategy move:";
-                m.dbg();
-                return (m);
-            }
-        }
-
-        if (!random.empty())
-        {
-            return (random[rand() % random.size()]);
-        }
-
-        return (Play()); // pass
-    }
-};
-
+//     return (Play()); // pass
+// }
+class Player;
 class Game
 {
 public:
-    vector<pair<short, short>> freePos;
     char board[BOARDSIZE][BOARDSIZE];
     bool captures[BOARDSIZE][BOARDSIZE];
 
@@ -420,22 +211,12 @@ public:
         initBoard();
     }
 
-    bool play(Agent &p, Play m)
+    bool play(Player &p, Play m)
     {
-        auto fp = freePos.begin();
-        for (; fp < freePos.end(); fp++)
-        {
-            if (fp->first == m.x && fp->second == m.y)
-            {
-                break;
-            }
-        }
-
-        if (fp == freePos.end())
+        if (board[m.y][m.x] != A)
         {
             return (false);
         }
-
         board[m.y][m.x] = p.myC;
         if (score(p) != 0.0)
         {
@@ -465,12 +246,11 @@ public:
             for (short j; j < BOARDSIZE; j++)
             {
                 board[i][j] = '.';
-                freePos.push_back(pair(i, j));
             }
         }
     }
 
-    float score(Agent &p)
+    float score(Player &p)
     {
         evals++;
         for (short x = 0; x < BOARDSIZE; x++)
@@ -545,49 +325,66 @@ public:
     }
 };
 
+class Player
+{
+public:
+    const char myC;
+    const char opC;
+    char board[MAXDEPTH][BOARDSIZE][BOARDSIZE];
+
+    Player(const char myC) : myC(myC),opC(myC==W?B:W)
+    {
+    }
+
+    Play nextPlay(const char board[BOARDSIZE][BOARDSIZE])
+    {
+        initBoards(board, 0);
+    }
+
+    bool isSuicide(short x, short y, short depth)
+    {
+        if (((y > 0 && board[depth][y - 1][x] == opC) || y == 0) &&
+            ((y < BOARDSIZE - 1 && board[depth][y + 1][x] == opC) || y == BOARDSIZE - 1) && // suicide check
+            ((x > 0 && board[depth][y][x - 1] == opC) || x == 0) &&
+            ((x < BOARDSIZE - 1 && board[depth][y][x + 1] == opC) || x == BOARDSIZE - 1))
+        {
+            //   cerr << depth << " | suicide pos "
+            //        << " + ";
+            //   m.dbg();
+            return(true); // didnt pass check
+        }
+        return(false);
+    }
+
+    void initBoards(const char board[BOARDSIZE][BOARDSIZE], short depth)
+    {
+        for (short k = depth; k < MAXDEPTH; k++)
+        {
+            for (short i = 0; i < BOARDSIZE; i++)
+            {
+                for (short j = 0; j < BOARDSIZE; j++)
+                {
+                    this->board[k][i][j] = board[i][j];
+                }
+            }
+        }
+    }
+
+    Play searchMove(char board[BOARDSIZE][BOARDSIZE], short depth)
+    {
+        bool myMove = bool(depth % 2);
+        char opC = myC == W ? B : W;
+
+        short index = short(depth / 2 + depth % 2);
+        Play p;
+    }
+};
 /**
  * Capture more stones than your opponent.
  **/
 
-main()
+int main()
 {
-    char pattern1[][BOARDSIZE] = {
-        {'.', 'i', '.', '.', '.', '.', '.', '.', '.'},
-        {'h', 'a', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', 'b', '.', '.', '.', '.', '.', '.', '.'},
-        {'g', 'c', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', 'd', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', 'e', '.', '.', '.', '.', '.', '.', '.'},
-        {'k', 'f', '.', '.', '.', '.', '.', '.', '.'},
-        {'j', 'l', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', 'm', '.', '.', '.', '.', '.', '.', '.'}};
-
-    char pattern2[][BOARDSIZE] = {
-        {'.', 'f', 'e', '.', '.', '.', '.', '.', '.'},
-        {'g', '.', 'd', '.', '.', '.', '.', '.', '.'},
-        {'c', 'b', 'a', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'}};
-
-    char pattern3[][BOARDSIZE] = {
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', 'a', 'b', 'd', '.', '.', '.', '.'},
-        {'.', '.', 'c', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', 'e', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'},
-        {'.', '.', '.', '.', '.', '.', '.', '.', '.'}};
-    auto patterns = {pattern1, pattern2, pattern3};
-    auto strategies = create_strategies(patterns);
-    //randomize
-    sort(strategies.begin(), strategies.end(), [](const auto &l, const auto &r)
-         { return (bool(rand() & 0x1)); });
 
     string my_color = "B";
 
@@ -603,9 +400,9 @@ main()
 
     Game game;
 
-    Agent p1(game, strategies, myC);
+    Player p1(game, myC);
 
-    Agent p2(game, strategies, opC);
+    Player p2(game, opC);
 
     // game loop
     while (1)
