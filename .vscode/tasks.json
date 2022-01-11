@@ -2,16 +2,15 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: clang++ arquivo de build ativo",
-            "command": "/usr/bin/clang++",
+            "label": "C/C++: win32 GCC",
+            "command": "C:\\MinGW\\bin\\g++",
             "args": [
                 "-std=c++17",
-                "-stdlib=libc++",
                 "-fdiagnostics-color=always",
-                "-g",
+                "-g",               
                 "${file}",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}" 
+                "${fileDirname}\\bin\\${fileBasenameNoExtension}.exe"
             ],
             "options": {
                 "cwd": "${fileDirname}"
@@ -23,7 +22,32 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Tarefa gerada pelo Depurador."
+            "detail": "Win GCC 32"
+        },
+        {
+            "type": "cppbuild",
+            "label": "C/C++: clang++ arquivo de build ativo",
+            "command": "/usr/bin/clang++",
+            "args": [
+                "-std=c++17",
+                "-stdlib=libc++",
+                "-fdiagnostics-color=always",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/bin//${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "MAC OS"
         }
     ],
     "version": "2.0.0"

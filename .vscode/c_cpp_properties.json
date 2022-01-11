@@ -1,24 +1,40 @@
 {
-  "configurations": [
-    {
-      "name": "macos-gcc-arm64",
-      "includePath": [
-        "${workspaceFolder}/**"
-      ],
-      "compilerPath": "/usr/bin/clang",
-      "cStandard": "${default}",
-      "cppStandard": "c++17",
-      "intelliSenseMode": "macos-gcc-arm64",
-      "compilerArgs": [
-        "-std=c++17",
-        "-stdlib=libc++",
-        "-fdiagnostics-color=always",
-        "-g",
-        "${file}",
-        "-o",
-        "${fileDirname}/${fileBasenameNoExtension}"
-      ]
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "name": "win32 GCC",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:\\MinGW\\lib\\gcc\\mingw32\\6.3.0\\include\\c++\\"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-gcc-x86",
+            "compilerPath": "C:\\MinGW\\bin\\gcc"
+        },
+        {
+            "name": "macos-gcc-arm64",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "macos-gcc-arm64",
+            "compilerArgs": [
+                "-std=c++17",
+                "-stdlib=libc++",
+                "-fdiagnostics-color=always",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ]
+        }
+    ],
+    "version": 4
 }
