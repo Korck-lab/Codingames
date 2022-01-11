@@ -2,8 +2,8 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: win32 GCC",
-            "command": "C:\\MinGW\\bin\\g++",
+            "label": "C/C++: win64 GCC",
+            "command": "C:\\msys64\\mingw64\\bin\\g++",
             "args": [
                 "-std=c++17",
                 "-fdiagnostics-color=always",
@@ -22,7 +22,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Win GCC 32"
+            "detail": "Win G++ 64"
         },
         {
             "type": "cppbuild",

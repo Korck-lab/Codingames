@@ -5,8 +5,8 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "win32 GCC Criar e depurar o arquivo ativo",
-            "type": "lldb",
+            "name": "win64 GCC Criar e depurar o arquivo ativo",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}\\bin\\${fileBasenameNoExtension}.exe",
             "args": [],
@@ -14,8 +14,8 @@
             "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "C/C++: win32 GCC"
+            "MIMode": "cppdbg",
+            "preLaunchTask": "C/C++: win64 GCC"
         },
         {
             "name": "clang++ - Criar e depurar o arquivo ativo",
