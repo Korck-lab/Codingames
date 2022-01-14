@@ -11,6 +11,18 @@
 #define L 0b0000
 #define R 0b1111
 
+char *makeStr(char output[], byte input, bool inv)
+{
+    char l = inv ? 'R' : 'L';
+    char r = inv ? 'L' : 'R';
+    for (short p = 0; p < 4; p++)
+    {
+        output[p * 2] = (input & 0x1 << (3 - p)) ? r : l;
+    }
+
+    return output;
+}
+
 byte makeByte(char *input)
 {
     byte ret = 0;
@@ -32,30 +44,20 @@ byte makeByte(char *input)
 
 byte crossStep(byte state)
 {
-    if(state == 0xf)
-    {
-        fprintf(stderr, "end state\n");
-        return state;
-    }
-    byte Fa = (state & F); //1 0
-    byte Wa = (state & W); //1 0
-    byte Ga = (state & G); //1 0
-    byte Ca = (state & C); //1 1
-    byte mW = !Ga && !Ca;
-    byte mG = true;
-    byte mC = !Wa && !Ga;
-    byte mF = (!Ga && !Ca) || (!Wa && !Ga);
+    bool Fa = (state & F); //1 0 0 0
+    bool Wa = (state & W); //1 0 0 0
+    bool Ga = (state & G); //1 0 1 0
+    bool Ca = (state & C); //1 1 0 0
+    bool mF = !Fa;         //always switch sides
+    bool mG = Ga == Fa ? ((Wa == Ga && Ca == Ga) || (Wa != Ga && Ca != Ga)) : Ga;
+    bool mC = (Ca == Fa && !Ca && mG == Ga) || Ca;
+    bool mW = (Wa == Fa && !Wa && mC == Ca && mG == Ga) || Wa;
     byte nextState = (F * mF) | (W * mW) | (G * mG) | (C * mC);
 
-    fprintf(stderr, "%x %x \n", state, nextState);
+    // fprintf(stderr, "%x %x \n", state, nextState);
 
     return nextState;
 }
-typedef struct state
-{
-    byte where;
-    state *future[4];
-} state;
 
 /**
  * Auto-generated code below aims at helping you parse
@@ -71,23 +73,42 @@ int main()
     scanf("%[^\n]", TARGET);
     byte init = makeByte(INITIAL);
     byte target = makeByte(TARGET);
-    short maxP = 4 * 3 * 2 / (4 - 2);
-    state P[maxP];
-    memset(P, 0x0, maxP * sizeof(state));
-
-    state *tree = &P[0];
-    tree->where = init;
-    state *curr = &P[0];
-    for (int i = 0; i < maxP-1; i++)
+    if(init == target)
     {
-        P[i+1].where=crossStep(P[i].where);
+        printf(TARGET);
+        return 0;
+    }
+    bool inv = init > target;
+    if (inv) // XOR
+    {
+        init = init^0xF;
+        target = target^0xF;
+    }
+    short maxP = 4 * 3 * 2 / (4 - 2);
+    byte P[maxP];
+    P[0] = init;
+    short c=0;
+    for (int i = 0; i < maxP - 1; i++)
+    {
+        P[i + 1] = crossStep(P[i]);
+        c++;
+        if (P[i+1] == target)
+        {
+            // fprintf(stderr, "end state\n");
+            break;
+        }
+    }
+    char output[] = "? ? ? ?\n";
+    for(int i=0; i<=c; i++)
+    {
+        printf(makeStr(output, P[i], inv));
     }
 
     // Write an answer using printf(). DON'T FORGET THE TRAILING \n
     // To debug: fprintf(stderr, "Debug messages...\n");
 
-    printf("L L L L\n");
-    printf("R L R L\n");
+    // printf("L L L L\n");
+    // printf("R L R L\n");
 
     return 0;
 }
