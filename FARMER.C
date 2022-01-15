@@ -49,10 +49,12 @@ byte crossStep(byte state)
     bool Ga = (state & G); //1 0 1 0
     bool Ca = (state & C); //1 1 0 0
     bool mF = !Fa;         //always switch sides
-    bool mG = Ga == Fa ? ((Wa == Ga && Ca == Ga) || (Wa != Ga && Ca != Ga)) : Ga;
+    bool mG = Ga == Fa ? ((Wa == Ga && Ca == Ga) || (Wa != Ga && Ca != Ga)) || (Wa != Ca): Ga;
     bool mC = (Ca == Fa && !Ca && mG == Ga) || Ca;
     bool mW = (Wa == Fa && !Wa && mC == Ca && mG == Ga) || Wa;
     byte nextState = (F * mF) | (W * mW) | (G * mG) | (C * mC);
+    char b[] = "? ? ? ?\n";
+    printf(makeStr(b, nextState, false));
 
     // fprintf(stderr, "%x %x \n", state, nextState);
 
@@ -78,7 +80,7 @@ int main()
         printf(TARGET);
         return 0;
     }
-    bool inv = init > target;
+    bool inv = init&W+init&C > target&W+target&C;
     if (inv) // XOR
     {
         init = init^0xF;
