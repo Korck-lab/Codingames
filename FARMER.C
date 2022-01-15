@@ -8,8 +8,6 @@
 #define W (0x1 << 2)
 #define G (0x1 << 1)
 #define C (0x1 << 0)
-#define L 0b0000
-#define R 0b1111
 
 char *makeStr(char output[], byte input, bool inv)
 {
@@ -33,70 +31,84 @@ byte makeByte(char *input)
             break;
         if (*c == ' ')
             continue;
-
-        // fprintf(stderr, "%x %c %d\n", ret, *c, p);
-
         ret |= (*c == 'L' ? 0x0 : 0x1) << p;
         --p;
     }
     return ret;
 }
 
-byte crossStep(byte state)
+byte crossStep(byte state, bool invW)
 {
     bool Fa = (state & F); //1 0 0 0
     bool Wa = (state & W); //1 0 0 0
     bool Ga = (state & G); //1 0 1 0
     bool Ca = (state & C); //1 1 0 0
     bool mF = !Fa;         //always switch sides
-    bool mG = Ga == Fa ? ((Wa == Ga && Ca == Ga) || (Wa != Ga && Ca != Ga)) || (Wa != Ca): Ga;
+    bool mG = Fa == Ga ? (Wa < Ga && Ca < Ga) || (Wa > Ga && Ca > Ga) || (Wa == Ga && Ca == Ga): Ga;  
+    bool mWi = (Wa == Fa && !Wa && mG == Ga) || Wa;
+    bool mCi = (Ca == Fa && !Ca && mWi == Wa && mG == Ga) || Ca;
     bool mC = (Ca == Fa && !Ca && mG == Ga) || Ca;
     bool mW = (Wa == Fa && !Wa && mC == Ca && mG == Ga) || Wa;
     byte nextState = (F * mF) | (W * mW) | (G * mG) | (C * mC);
-    char b[] = "? ? ? ?\n";
-    printf(makeStr(b, nextState, false));
-
-    // fprintf(stderr, "%x %x \n", state, nextState);
-
-    return nextState;
+    byte nextStatei = (F * mF) | (W * mWi) | (G * mG) | (C * mCi);
+    
+    return invW?nextStatei:nextState;
 }
 
-/**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
-int main()
+void tests()
 {
+    char ints[][9] = {"L L L L", "R R R R", "L R L R", "L R L L", "R L R R"};
+    byte tars[][9] = {"R L R L", "L R L R", "R R R R", "R R L R", "L L R R"};
+    char b[9]= "? ? ? ? ";
+    bool t = true;
+    bool f = false;
+    printf("%s - %s - %d\n",ints[0],makeStr(b, crossStep(makeByte(ints[0]), f), f), f);
+    printf("%s - %s - %d\n",ints[0],makeStr(b, crossStep(makeByte(ints[0]), t), t), t);
+    printf("%s - %s - %d\n",ints[1],makeStr(b, crossStep(makeByte(ints[1]), f), f), f);
+    printf("%s - %s - %d\n",ints[1],makeStr(b, crossStep(makeByte(ints[1]), t), t), t);
+    printf("%s - %s - %d\n",ints[2],makeStr(b, crossStep(makeByte(ints[2]), f), f), f);
+    printf("%s - %s - %d\n",ints[2],makeStr(b, crossStep(makeByte(ints[2]), t), t), t);
+    printf("%s - %s - %d\n",ints[3],makeStr(b, crossStep(makeByte(ints[3]), f), f), f);
+    printf("%s - %s - %d\n",ints[3],makeStr(b, crossStep(makeByte(ints[3]), t), t), t);
+    printf("%s - %s - %d\n",ints[4],makeStr(b, crossStep(makeByte(ints[4]), f), f), f);
+    printf("%s - %s - %d\n",ints[4],makeStr(b, crossStep(makeByte(ints[4]), t), t), t);
+}
 
-    char INITIAL[11];
-    scanf("%[^\n]", INITIAL);
-    fgetc(stdin);
-    char TARGET[11];
-    scanf("%[^\n]", TARGET);
-    byte init = makeByte(INITIAL);
-    byte target = makeByte(TARGET);
+int solution(byte init, byte target)
+{
     if(init == target)
     {
-        printf(TARGET);
+        char b[9];
+        printf(makeStr(b, init, false));
         return 0;
     }
-    bool inv = init&W+init&C > target&W+target&C;
+
+    bool inv = ((init&W)+(init&C)) > ((target&W)+(target&C));
     if (inv) // XOR
     {
         init = init^0xF;
         target = target^0xF;
     }
     short maxP = 4 * 3 * 2 / (4 - 2);
-    byte P[maxP];
-    P[0] = init;
+    byte P0[maxP];
+    byte P1[maxP];
+    P0[0] = init;
+    P1[0] = init;
+    byte *P;
     short c=0;
     for (int i = 0; i < maxP - 1; i++)
     {
-        P[i + 1] = crossStep(P[i]);
+        P0[i + 1] = crossStep(P0[i], false^inv);
+        P1[i + 1] = crossStep(P0[i], true^inv);
         c++;
-        if (P[i+1] == target)
+        if (P0[i+1] == target)
         {
-            // fprintf(stderr, "end state\n");
+            P=P0;
+            break;
+        }
+        if (P1[i+1] == target)
+        {
+            P=P1;
             break;
         }
     }
@@ -105,12 +117,23 @@ int main()
     {
         printf(makeStr(output, P[i], inv));
     }
-
-    // Write an answer using printf(). DON'T FORGET THE TRAILING \n
-    // To debug: fprintf(stderr, "Debug messages...\n");
-
-    // printf("L L L L\n");
-    // printf("R L R L\n");
-
     return 0;
+}
+
+/**
+ * Auto-generated code below aims at helping you parse
+ * the standard input according to the problem statement.
+ **/
+int main()
+{
+    tests();
+
+    char INITIAL[11];
+    scanf("%[^\n]", INITIAL);
+    fgetc(stdin);
+    char TARGET[11];
+    scanf("%[^\n]", TARGET);
+    byte init = makeByte(INITIAL);
+    byte target = makeByte(TARGET);
+    return(solution(init, target));
 }
