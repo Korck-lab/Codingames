@@ -10,6 +10,16 @@ max_time = 100
 start = 0
 start_pos = np.array([[2, 2], [6, 2], [2, 6], [6, 6]])
 
+def suicide(x, y, op_color):
+    global board
+    
+    if ((y > 0 and board[y - 1][x] == op_color) or y == 0) and \
+        ((y < 9 - 1 and board[y + 1][x] == op_color) or y == 9 - 1) and \
+        ((x > 0 and board[y][x - 1] == op_color) or x == 0) and \
+        ((x < 9 - 1 and board[y][x + 1] == op_color) or x == 9 - 1):
+            return False
+    
+    return True
 
 def play(my_color, op_color, depth):
     global games, board, start, max_time
