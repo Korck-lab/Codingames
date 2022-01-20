@@ -4,10 +4,10 @@ from time import time_ns
 import numpy as np
 
 games = 0
-board = np.array([['.', '.', '.', '.', '.', '.', '.', '.', '.'],
-                  ['.', '.', 'W', '.', '.', 'B', '.', '.', '.'],
-                  ['.', '.', 'B', 'W', '.', '.', '.', '.', '.'],
-                  ['.', '.', 'W', '.', '.', 'B', '.', '.', '.'],
+board = np.array([['.', '.', 'W', '.', 'W', 'B', '.', '.', '.'],
+                  ['.', '.', 'W', 'W', 'B', '.', '.', '.', '.'],
+                  ['.', '.', '.', 'B', 'W', '.', 'B', '.', '.'],
+                  ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
                   ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
                   ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
                   ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
@@ -23,9 +23,9 @@ op_pieces = []
 def score(m_x, m_y, color):
     l_board = np.array(board)
     l_board[m_y][m_x] = color
-    liberty = np.array(l_board)
-    liberty[liberty == '.'] = True
-    liberty[liberty == 'B' | liberty == 'W'] = False
+    liberty = np.ndarray(shape=l_board.shape, dtype=bool)
+    liberty[l_board != '.'] = False
+    liberty[l_board == '.'] = True
 
     changed = True
 
@@ -105,59 +105,69 @@ def must_play(x, y, op_color):
     return [-1, -1]
 
 
+def check_pos(my_color, best, verified, min_x, max_x, min_y, max_y, x, y):
+    if x+y*board.shape[0] not in verified:
+        verified[x+y*board.shape[0]] = True
+        min_x = x if x < min_x else min_x
+        min_y = y if y < min_y else min_y
+        max_x = x if x > max_x else max_x
+        max_y = y if y > max_y else max_y
+        best.append([[x, y], score(x, y, my_color)])
+    return min_x, max_x, min_y, max_y
+
+
+def check_edges(my_color, op_color, best, verified, min_x, max_x, min_y, max_y, x, y):
+    if y > 0 and board[y - 1][x] == '.' and not suicide(x, y-1, op_color):
+        min_x, max_x, min_y, max_y = check_pos(
+            my_color, best, verified, min_x, max_x, min_y, max_y, x, y - 1)
+
+    if y < board.shape[0]-1 and board[y + 1][x] == '.' and not suicide(x, y+1, op_color):
+        min_x, max_x, min_y, max_y = check_pos(
+            my_color, best, verified, min_x, max_x, min_y, max_y, x, y + 1)
+
+    if x > 0 and board[y][x - 1] == '.' and not suicide(x-1, y, op_color):
+        min_x, max_x, min_y, max_y = check_pos(
+            my_color, best, verified, min_x, max_x, min_y, max_y, x - 1, y)
+
+    if x < board.shape[1]-1 and board[y][x + 1] == '.' and not suicide(x+1, y, op_color):
+        min_x, max_x, min_y, max_y = check_pos(
+            my_color, best, verified, min_x, max_x, min_y, max_y, x + 1, y)
+
+    return min_x, max_x, min_y, max_y
+
+
 def play(my_color, op_color, depth):
     global games, board, start, max_time, my_pieces
     if my_color == 'B' and games == 0:
         return start_pos[np.random.choice(4)]
-    print("board:{}".format(board.shape), file=sys.stderr, flush=True)
+    # print("board:{}".format(board.shape), file=sys.stderr, flush=True)
 
-    # for p in my_pieces:
-    #     if board[p[1]][p[0]] == my_color:
-    #         p_x, p_y = must_play(p[0], p[1], op_color)
-    #         if p_x != -1:
-    #             return [p_x, p_y]
     best = []
-    for y in range(board.shape[0]):
-        for x in range(board.shape[1]):
+    verified = {}
+    min_x = board.shape[1]
+    max_x = 0
+    min_y = board.shape[0]
+    max_y = 0
+    for x, y in op_pieces:
+        min_x, max_x, min_y, max_y = check_edges(
+            my_color, op_color, best, verified, min_x, max_x, min_y, max_y, x, y)
+
+    for x, y in my_pieces:
+        min_x, max_x, min_y, max_y = check_edges(
+            my_color, op_color, best, verified, min_x, max_x, min_y, max_y, x, y)
+
+    for y in range(min_y, max_y):
+        for x in range(min_x, max_x):
             if board[y][x] != '.' or suicide(x, y, op_color):
                 continue
-            
-            # if board[y][x] == op_color:
-            #     # my = 0
-            #     # op = 0
-            #     # em = 0
-            #     # my += 1 if (x > 0 and board[y][x-1] == my_color) else 0
-            #     # my += 1 if (x < board.shape[1] -
-            #     #             1 and board[y][x+1] == my_color) else 0
-            #     # my += 1 if (y > 0 and board[y-1][x] == my_color) else 0
-            #     # my += 1 if (y < board.shape[0] -
-            #     #             1 and board[y+1][x] == my_color) else 0
-            #     # op += 1 if (x > 0 and board[y][x-1] == op_color) else 0
-            #     # op += 1 if (x < board.shape[1] -
-            #     #             1 and board[y][x+1] == op_color) else 0
-            #     # op += 1 if (y > 0 and board[y-1][x] == op_color) else 0
-            #     # op += 1 if (y < board.shape[0] -
-            #     #             1 and board[y+1][x] == op_color) else 0
-            #     # em += 1 if (x > 0 and board[y][x-1] == '.') else 0
-            #     # em += 1 if (x < board.shape[1] -
-            #     #             1 and board[y][x+1] == '.') else 0
-            #     # em += 1 if (y > 0 and board[y-1][x] == '.') else 0
-            #     # em += 1 if (y < board.shape[0] -
-            #     #             1 and board[y+1][x] == '.') else 0
-            #     # print("my:{} op:{} em:{}".format(my, op, em),
-            #     #       file=sys.stderr, flush=True)
+            if x+y*board.shape[0] in verified:
+                continue
+            best.append([[x, y], score(x, y, my_color)])
 
-            #     # if op == 0 and em >= 1:
-            #     if (x > 0 and board[y][x-1] == '.' and not suicide(x-1, y, op_color)):
-            #         return [x-1, y]
-            #     if (x < board.shape[1]-1 and board[y][x+1] == '.' and not suicide(x+1, y, op_color)):
-            #         return [x+1, y]
-            #     if (y > 0 and board[y-1][x] == '.' and not suicide(x, y-1, op_color)):
-            #         return [x, y-1]
-            #     if (y < board.shape[0]-1 and board[y+1][x] == '.' and not suicide(x, y+1, op_color)):
-            #         return [x, y+1]
+    if len(best) > 0:
+        best.sort(key=lambda x: x[1], reverse=True)
 
-    return [-1, -1]
+    return best[0][0] if best[0][1] >= 0.0 else [-1, -1]
 
 
 # Capture more stones than your opponent.
