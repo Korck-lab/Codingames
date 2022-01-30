@@ -70,12 +70,17 @@ unsigned int *encode(const unsigned int *a, int size)
   for (int i = 0; i < size; i++)
     for (int j = 0; j < size; j++)
     {
-      b[(i + j) / 32] ^= ((a[i / 32] >> (i % 32)) &
-                          (a[j / 32 + size / 32] >> (j % 32)) & 1)
-                         << ((i + j) % 32); // Magic centaurian operation
+      int ir_shift = int(i % 32);
+      int jr_shift = int(j % 32);
+      int ijl_shift = int((i + j) % 32);
+      int out_index = int((i + j) / 32);
+      auto a_ir_shifted = (a[i / 32] >> ir_shift);
+      b[out_index] ^= (a_ir_shifted &
+                       (a[j / 32 + size / 32] >> jr_shift) & 1)
+                      << ijl_shift; // Magic centaurian operation
     }
 
-    return b;
+  return b;
 }
 
 int main()
@@ -85,7 +90,7 @@ int main()
   // cin >> size;
 
   unsigned int *a = new unsigned int[size / 16]; // <- input tab to encrypt
-  
+
   a[0] = 0x000073af;
   a[1] = 0x0;
   // for (int i = 0; i < size / 16; i++)
