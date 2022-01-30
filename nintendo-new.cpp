@@ -70,17 +70,30 @@ unsigned int *encode(const unsigned int *a, int size)
   for (int i = 0; i < size; i++)
     for (int j = 0; j < size; j++)
     {
-      int ir_shift = int(i % 32);
-      int jr_shift = int(j % 32);
-      int ijl_shift = int((i + j) % 32);
-      int out_index = int((i + j) / 32);
-      auto a_ir_shifted = (a[i / 32] >> ir_shift);
-      b[out_index] ^= (a_ir_shifted &
-                       (a[j / 32 + size / 32] >> jr_shift) & 1)
-                      << ijl_shift; // Magic centaurian operation
+      unsigned int jr_shift = int(j % 32);
+      unsigned int ijl_shift = int((i + j) % 32);
+      unsigned int out_index = int((i + j) / 32);
+      unsigned int j32_index = int(j / 32);
+      unsigned int offset = int(size / 32);
+
+      unsigned int ir_shift = int(i % 32);
+      unsigned int i32_index = int(i / 32);
+      unsigned int a_ir_shifted = int(a[i32_index] >> ir_shift);
+
+      b[out_index] ^= (a_ir_shifted & (a[j32_index + offset] >> jr_shift) & 1) << ijl_shift; // Magic centaurian operation
     }
 
   return b;
+}
+
+unsigned int *decode(const unsigned int *a, int size)
+{
+  unsigned int *d = new unsigned int[size / 16]; // <- output tab
+  for (int i = 0; i < size / 16; i++)
+  { // Write size / 16 zeros to b
+    d[i] = 0;
+  }
+  return d;
 }
 
 int main()
@@ -98,10 +111,17 @@ int main()
   //   cin >> hex >> a[i];
   // }
 
-  unsigned int *b = encode(a, size);
+  unsigned int *d = decode(a, size);
+
+  unsigned int *b = encode(d, size);
 
   for (int i = 0; i < size / 16; i++)
   {
+    if (a[i] != b[i])
+    {
+      cerr << "values did't match: b:[" << setfill('0') << setw(8) << hex << b[i] << "] a:[" << setfill('0') << setw(8) << hex << a[i] << "]" << endl; // print result
+    }
+
     if (i > 0)
     {
       cout << ' ';

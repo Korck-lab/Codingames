@@ -37,7 +37,7 @@
             "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "cppdbg",
+            "MIMode": "gdb",
             "preLaunchTask": "C/C++: g++.exe build active file"
         },
         {
