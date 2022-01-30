@@ -22,13 +22,15 @@ start_pos = np.array([[[2, 2], 0.0], [[6, 2], 0.0],
 my_pieces = []
 op_pieces = []
 
+ww = np.ones(shape=board.shape, dtype=float)
 bw = np.ones(shape=board.shape, dtype=float)
-my_mask = np.array([[1.5, 1.0, 1.5],
+my_mask = np.array([[2.0, 1.0, 2.0],
                     [1.0, 0.0, 1.0],
-                    [1.5, 1.0, 1.5]])
-op_mask = np.array([[1.0, 1.5, 1.0],
-                    [1.5, 0.0, 1.5],
-                    [1.0, 1.5, 1.0]])
+                    [2.0, 1.0, 2.0]])
+
+op_mask = np.array([[1.0, 0.5, 1.0],
+                    [0.5, 0.0, 0.5],
+                    [1.0, 0.5, 1.0]])
 
 
 def score(y_range, x_range, m_x, m_y, color):
@@ -46,8 +48,6 @@ def score(y_range, x_range, m_x, m_y, color):
 
     while changed:
         changed = False
-        # for y in range(l_board.shape[0]):
-        #     for x in range(l_board.shape[0]):
         for y in range(max(y_range[0]-1, 0), min(y_range[1]+2, l_board.shape[0])):
             for x in range(max(x_range[0]-1, 0), min(x_range[1]+2, l_board.shape[1])):
 
@@ -73,8 +73,6 @@ def score(y_range, x_range, m_x, m_y, color):
 
     my_count = 0
 
-    # for y in range(l_board.shape[0]):
-    #     for x in range(l_board.shape[1]):
     for y in range(max(y_range[0]-1, 0), min(y_range[1]+2, l_board.shape[0])):
         for x in range(max(x_range[0]-1, 0), min(x_range[1]+2, l_board.shape[1])):
             my_count += 1.0 if not liberty[y][x] and l_board[y][x] != color else \
@@ -131,14 +129,9 @@ start = time_ns()//1000000
 while not debug:
     start = time_ns()//1000000
     my_pieces = []
-    # opponent_x: The x coordinate of your opponent's last move (or -1 if the opponent passed)
-    # opponent_y: The y coordinate of your opponent's last move (or -1 if the opponent passed)
     opponent_x, opponent_y = [int(i) for i in input().split()]
-    # my_score: Your current score (the number of captured stones)
-    # opponent_score: the opponents current score (the number of captured stones)
     my_score, opponent_score = [int(i) for i in input().split()]
     for y in range(board_size):
-        # A row of the current board where 'B' marks a black stone, 'W' marks a white stone and '.' marks an empty field
         inp = input()
         for x in range(len(inp)):
             board[y][x] = inp[x]
@@ -146,11 +139,9 @@ while not debug:
                 my_pieces.append([x, y])
             if inp[x] == op_color:
                 op_pieces.append([x, y])
-        # print("{}".format(board[y, 0:9]), file=sys.stderr, flush=True)
 
     t = play((0, board.shape[0]), (0, board.shape[1]),
              my_color, op_color, 0, 1.0)
-    # print(t, file=sys.stderr, flush=True)
     p_x = t[0][0]
     p_y = t[0][1]
     games += 1
@@ -158,12 +149,10 @@ while not debug:
     c_time = (time_ns()//1000000)-start
     print("current time millis:{}".format(c_time), file=sys.stderr, flush=True)
 
-    # x and y coordinates of the stone you want to place or PASS if you don't want to place a stone
     print("PASS") if p_x == -1 else print("{} {}".format(p_x, p_y))
 
 # debug block
 for y in range(board.shape[0]):
-    # A row of the current board where 'B' marks a black stone, 'W' marks a white stone and '.' marks an empty field
     for x in range(board.shape[1]):
         if board[y][x] == my_color:
             my_pieces.append([x, y])
@@ -181,5 +170,4 @@ print("B = x:{} y:{}".format(p_x, p_y), file=sys.stderr, flush=True)
 board[p_y][p_x] = my_color
 
 for y in range(board.shape[0]):
-    # A row of the current board where 'B' marks a black stone, 'W' marks a white stone and '.' marks an empty field
     print("{}".format(board[y, 0:9]), file=sys.stderr, flush=True)
