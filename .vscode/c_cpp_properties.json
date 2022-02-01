@@ -14,7 +14,17 @@
             "cStandard": "c17",
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-gcc-x64",
-            "compilerPath": "C:\\msys64\\mingw64\\bin\\g++"
+            "compilerPath": "C:\\msys64\\mingw64\\bin\\g++.exe",
+            "compilerArgs": [
+                "-std=c++17",
+                "-stdlib=libc++",
+                "-fdiagnostics-color=always",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "mergeConfigurations": true
         },
         {
             "name": "macos-gcc-arm64",

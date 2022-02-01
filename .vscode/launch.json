@@ -24,21 +24,8 @@
             "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "cppdbg",
-            "preLaunchTask": "C/C++: win64 GCC"
-        },
-        {
-            "name": "Mingw 32 G++",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${fileDirname}\\bin\\${fileBasenameNoExtension}.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": false,
             "MIMode": "gdb",
-            "preLaunchTask": "C/C++: g++.exe build active file"
+            "preLaunchTask": "C/C++: win64 GCC"
         },
         {
             "name": "clang++ - Criar e depurar o arquivo ativo",
