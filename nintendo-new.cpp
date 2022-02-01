@@ -58,6 +58,24 @@ output
 
 using namespace std;
 
+class DNA 
+{
+  bool genes[256];
+
+  DNA()
+  {
+    for(int i=0; i<256; i++) 
+      genes[i] = bool(rand()%2);
+  }
+
+  DNA(DNA &d)
+  {
+    for(int i=0; i<256; i++) 
+      genes[i] = d.genes[i];
+  }
+
+};
+
 unsigned int *encode(const unsigned int *a, int size)
 {
   unsigned int *b = new unsigned int[size / 16]; // <- output tab
