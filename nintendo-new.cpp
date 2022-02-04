@@ -1,6 +1,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <vector>
+
 /*
 input
 32
@@ -58,24 +60,6 @@ output
 
 using namespace std;
 
-class DNA 
-{
-  bool genes[256];
-
-  DNA()
-  {
-    for(int i=0; i<256; i++) 
-      genes[i] = bool(rand()%2);
-  }
-
-  DNA(DNA &d)
-  {
-    for(int i=0; i<256; i++) 
-      genes[i] = d.genes[i];
-  }
-
-};
-
 unsigned int *encode(const unsigned int *a, int size)
 {
   unsigned int *b = new unsigned int[size / 16]; // <- output tab
@@ -97,21 +81,45 @@ unsigned int *encode(const unsigned int *a, int size)
       unsigned int ir_shift = int(i % 32);
       unsigned int i32_index = int(i / 32);
       unsigned int a_ir_shifted = int(a[i32_index] >> ir_shift);
-
-      b[out_index] ^= (a_ir_shifted & (a[j32_index + offset] >> jr_shift) & 1) << ijl_shift; // Magic centaurian operation
+      unsigned int bit = int(a_ir_shifted & (a[j32_index + offset] >> jr_shift) & 1);
+      b[out_index] ^=  bit << ijl_shift; // Magic centaurian operation
     }
-
+//        << 7             a[0] >> 1            a[1] >> 6           0x1
+// [1]0 0 0 0 0 0 0  = 0 0 1 1 0 1[1]0  &  1[1]0 0 1 0 0 1  &  0 0 0 0 0 0 0[1]
+//  0 1 0 1 0 1 1 0  ^= 1 0 0 0 0 0 0 0
+// xor a^a = 0 a^b = 1
   return b;
 }
 
 unsigned int *decode(const unsigned int *a, int size)
 {
-  unsigned int *d = new unsigned int[size / 16]; // <- output tab
+  unsigned int *b = new unsigned int[size / 16]; // <- output tab
+
   for (int i = 0; i < size / 16; i++)
   { // Write size / 16 zeros to b
-    d[i] = 0;
+    b[i] = 0;
   }
-  return d;
+
+  vector<pair<unsigned int, unsigned int>> undo;
+
+  for (int i = 0; i < size; i++)
+    for (int j = 0; j < size; j++)
+    {
+      unsigned int jr_shift = int(j % 32);
+      unsigned int ijl_shift = int((i + j) % 32);
+      unsigned int out_index = int((i + j) / 32);
+      unsigned int j32_index = int(j / 32);
+      unsigned int offset = int(size / 32);
+
+      unsigned int ir_shift = int(i % 32);
+      unsigned int i32_index = int(i / 32);
+      unsigned int a_ir_shifted = int(a[i32_index] >> ir_shift);
+      unsigned int bit = int(a_ir_shifted & (a[j32_index + offset] >> jr_shift) & 1);
+      undo.push_back(pair(out_index,bit)); // 
+      b[out_index] ^=  bit << ijl_shift; // Magic centaurian operation
+    }
+
+  return b;
 }
 
 int main()
