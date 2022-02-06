@@ -60,6 +60,8 @@ output
 
 using namespace std;
 
+
+
 unsigned int *encode(const unsigned int *a, int size)
 {
   unsigned int *b = new unsigned int[size / 16]; // <- output tab
@@ -97,13 +99,11 @@ unsigned int *decode(const unsigned int *a, int size)
 
   for (int i = 0; i < size / 16; i++)
   { // Write size / 16 zeros to b
-    b[i] = 0;
+    b[i] = a[i];
   }
 
-  vector<pair<unsigned int, unsigned int>> undo;
-
-  for (int i = 0; i < size; i++)
-    for (int j = 0; j < size; j++)
+  for (int i = size-1; i >= 0; i--)
+    for (int j = size-1; j >= 0; j--)
     {
       unsigned int jr_shift = int(j % 32);
       unsigned int ijl_shift = int((i + j) % 32);
@@ -114,10 +114,11 @@ unsigned int *decode(const unsigned int *a, int size)
       unsigned int ir_shift = int(i % 32);
       unsigned int i32_index = int(i / 32);
       unsigned int a_ir_shifted = int(a[i32_index] >> ir_shift);
-      unsigned int bit = int(a_ir_shifted & (a[j32_index + offset] >> jr_shift) & 1);
-      undo.push_back(pair(out_index,bit)); // 
-      b[out_index] ^=  bit << ijl_shift; // Magic centaurian operation
+      unsigned int bit = 1 << ijl_shift & b[out_index];
+
+      b[out_index] ^=  bit // Magic centaurian operation
     }
+  
 
   return b;
 }
@@ -145,7 +146,7 @@ int main()
   {
     if (a[i] != b[i])
     {
-      cerr << "values did't match: b:[" << setfill('0') << setw(8) << hex << b[i] << "] a:[" << setfill('0') << setw(8) << hex << a[i] << "]" << endl; // print result
+      cerr << "values don't match: b:[" << setfill('0') << setw(8) << hex << b[i] << "] a:[" << setfill('0') << setw(8) << hex << a[i] << "]" << endl; // print result
     }
 
     if (i > 0)
