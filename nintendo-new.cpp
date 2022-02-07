@@ -116,7 +116,8 @@ unsigned int *decode(const unsigned int *a, int size)
       unsigned int a_ir_shifted = int(a[i32_index] >> ir_shift);
       unsigned int bit = 1 << ijl_shift & b[out_index];
 
-      b[out_index] ^=  bit // Magic centaurian operation
+      b[out_index] ^=  bit;
+      
     }
   
 
