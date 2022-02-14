@@ -60,7 +60,20 @@ output
 
 using namespace std;
 
-
+// binary tree class
+class Node
+{
+public:
+  Node(unsigned int data)
+  {
+    this->data = data;
+    this->zero = NULL;
+    this->one = NULL;
+  }
+  unsigned int data;
+  Node *zero;
+  Node *one;
+};
 
 unsigned int *encode(const unsigned int *a, int size)
 {
@@ -84,26 +97,29 @@ unsigned int *encode(const unsigned int *a, int size)
       unsigned int i32_index = int(i / 32);
       unsigned int a_ir_shifted = int(a[i32_index] >> ir_shift);
       unsigned int bit = int(a_ir_shifted & (a[j32_index + offset] >> jr_shift) & 1);
-      b[out_index] ^=  bit << ijl_shift; // Magic centaurian operation
+      b[out_index] ^= bit << ijl_shift; // Magic centaurian operation
     }
-//        << 7             a[0] >> 1            a[1] >> 6           0x1
-// [1]0 0 0 0 0 0 0  = 0 0 1 1 0 1[1]0  &  1[1]0 0 1 0 0 1  &  0 0 0 0 0 0 0[1]
-//  0 1 0 1 0 1 1 0  ^= 1 0 0 0 0 0 0 0
-// xor a^a = 0 a^b = 1
+  //        << 7             a[0] >> 1            a[1] >> 6           0x1
+  // [1]0 0 0 0 0 0 0  = 0 0 1 1 0 1[1]0  &  1[1]0 0 1 0 0 1  &  0 0 0 0 0 0 0[1]
+  //  0 1 0 1 0 1 1 0  ^= 1 0 0 0 0 0 0 0
+  // xor a^a = 0 a^b = 1
   return b;
 }
 
-unsigned int *decode(const unsigned int *a, int size)
+vector<vector<unsigned int>> decode(const unsigned int *a, int size)
 {
-  unsigned int *b = new unsigned int[size / 16]; // <- output tab
+
+  Node *root[size/16]; // <- root node
+  Node *current[size/16];
 
   for (int i = 0; i < size / 16; i++)
-  { // Write size / 16 zeros to b
-    b[i] = a[i];
+  { 
+    root[i] = new Node(a[i]);
+    current[i] = root[i];
   }
 
-  for (int i = size-1; i >= 0; i--)
-    for (int j = size-1; j >= 0; j--)
+  for (int i = size - 1; i >= 0; i--)
+    for (int j = size - 1; j >= 0; j--)
     {
       unsigned int jr_shift = int(j % 32);
       unsigned int ijl_shift = int((i + j) % 32);
@@ -113,13 +129,15 @@ unsigned int *decode(const unsigned int *a, int size)
 
       unsigned int ir_shift = int(i % 32);
       unsigned int i32_index = int(i / 32);
-      unsigned int a_ir_shifted = int(a[i32_index] >> ir_shift);
-      unsigned int bit = 1 << ijl_shift & b[out_index];
-
-      b[out_index] ^=  bit;
       
+      unsigned int a_ir_shifted = int(a[i32_index] >> ir_shift);
+
+      if(current[out_index] == root[out_index])
+      {
+        current[out_index]->zero = new Node(a[out_index] ^ 0x0);
+        current[out_index]->one = new Node(a[out_index] ^ (0x1 << ijl_shift));
+      }
     }
-  
 
   return b;
 }
